@@ -1,0 +1,532 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhoneBooster & Battery Master</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #e2e8f0;
+        }
+        .glow-cyan {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.35);
+        }
+        .glow-green {
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.35);
+        }
+        .gradient-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .radar-sweep {
+            border-right: 2px solid #06b6d4;
+            animation: sweep 2s infinite linear;
+        }
+        @keyframes sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between pb-12">
+
+    <!-- Header / Navbar -->
+    <header class="gradient-card sticky top-0 z-40 px-4 py-3 border-b border-slate-800">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg">
+                    <i class="fa-solid fa-bolt text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-white">PhoneBooster <span class="text-cyan-400 text-xs px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-800">PRO</span></h1>
+                    <p class="text-xs text-slate-400">Otimizador de Desempenho & Bateria</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="status-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Sistema Ativo
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Modal de Otimização em Tempo Real -->
+    <div id="optimization-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center hidden p-4">
+        <div class="gradient-card rounded-3xl p-6 max-w-sm w-full text-center border border-cyan-500/30 relative overflow-hidden">
+            <div class="w-32 h-32 mx-auto relative flex items-center justify-center my-6">
+                <div class="absolute inset-0 rounded-full border-4 border-cyan-500/20"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin"></div>
+                <i class="fa-solid fa-microchip text-4xl text-cyan-400 animate-pulse"></i>
+            </div>
+            <h3 id="opt-title" class="text-xl font-bold text-white mb-2">Escaneando Sistema...</h3>
+            <p id="opt-desc" class="text-xs text-slate-400 mb-6">Encerrando tarefas invisíveis e liberando memória RAM de travamentos.</p>
+            
+            <div class="w-full bg-slate-800 rounded-full h-2 mb-4 overflow-hidden border border-slate-700">
+                <div id="opt-progress" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-2 rounded-full transition-all duration-300 w-0"></div>
+            </div>
+            <span id="opt-percent" class="text-xs font-mono text-cyan-400 font-bold">0%</span>
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <main class="max-w-4xl mx-auto w-full px-4 pt-6 space-y-6">
+
+        <!-- Banner Principal com Botão de Otimização Rápida -->
+        <section class="gradient-card rounded-3xl p-6 relative overflow-hidden border border-slate-700/50 shadow-2xl">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                <div class="text-center md:text-left space-y-2">
+                    <span class="text-xs font-semibold tracking-wider text-cyan-400 uppercase bg-cyan-950/50 px-3 py-1 rounded-full border border-cyan-800/50">Status de Desempenho</span>
+                    <h2 id="overall-status-text" class="text-2xl md:text-3xl font-extrabold text-white">Celular Otimizado</h2>
+                    <p class="text-xs md:text-sm text-slate-400 max-w-md">Elimine lentidão, reduza temperatura de jogos e impeça que aplicativos em segundo plano gastem a bateria.</p>
+                </div>
+
+                <div class="flex flex-col items-center">
+                    <button id="btn-quick-optimize" onclick="startOptimization()" class="group relative w-36 h-36 rounded-full bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 p-1 flex items-center justify-center glow-cyan hover:scale-105 active:scale-95 transition-all duration-300">
+                        <div class="w-full h-full bg-slate-950 rounded-full flex flex-col items-center justify-center p-2 group-hover:bg-slate-900/80 transition-colors">
+                            <i class="fa-solid fa-rocket text-3xl text-cyan-400 mb-1 group-hover:animate-bounce"></i>
+                            <span class="text-xs font-bold text-white uppercase tracking-wider">Otimizar</span>
+                            <span class="text-[10px] text-cyan-300">Agora</span>
+                        </div>
+                    </button>
+                    <span class="text-[11px] text-slate-500 mt-2">Última otimização: <span id="last-opt-time">Agora mesmo</span></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Grade de Métricas em Tempo Real -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Card RAM -->
+            <div class="gradient-card rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-medium">Uso de RAM</span>
+                    <i class="fa-solid fa-memory text-cyan-400"></i>
+                </div>
+                <div class="space-y-1">
+                    <span id="ram-value" class="text-2xl font-bold text-white">68%</span>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="ram-bar" class="bg-cyan-400 h-full w-[68%] transition-all duration-500"></div>
+                    </div>
+                </div>
+                <span id="ram-subtext" class="text-[11px] text-slate-500 mt-2">2.7 GB / 4.0 GB em uso</span>
+            </div>
+
+            <!-- Card CPU -->
+            <div class="gradient-card rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-medium">Carga da CPU</span>
+                    <i class="fa-solid fa-microchip text-indigo-400"></i>
+                </div>
+                <div class="space-y-1">
+                    <span id="cpu-value" class="text-2xl font-bold text-white">42%</span>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="cpu-bar" class="bg-indigo-400 h-full w-[42%] transition-all duration-500"></div>
+                    </div>
+                </div>
+                <span id="cpu-subtext" class="text-[11px] text-slate-500 mt-2">8 núcleos ativos</span>
+            </div>
+
+            <!-- Card Bateria -->
+            <div class="gradient-card rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-medium">Bateria</span>
+                    <i class="fa-solid fa-battery-three-quarters text-emerald-400"></i>
+                </div>
+                <div class="space-y-1">
+                    <span id="battery-value" class="text-2xl font-bold text-white">75%</span>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="battery-bar" class="bg-emerald-400 h-full w-[75%] transition-all duration-500"></div>
+                    </div>
+                </div>
+                <span id="battery-time" class="text-[11px] text-slate-500 mt-2">~14h 20m restantes</span>
+            </div>
+
+            <!-- Card Temperatura -->
+            <div class="gradient-card rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-medium">Temperatura</span>
+                    <i class="fa-solid fa-temperature-half text-amber-400"></i>
+                </div>
+                <div class="space-y-1">
+                    <span id="temp-value" class="text-2xl font-bold text-white">34°C</span>
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                        <div id="temp-bar" class="bg-amber-400 h-full w-[45%] transition-all duration-500"></div>
+                    </div>
+                </div>
+                <span id="temp-status" class="text-[11px] text-emerald-400 mt-2 font-medium">Normal / Frio</span>
+            </div>
+        </section>
+
+        <!-- Seção Modo de Bateria & Economia -->
+        <section class="gradient-card rounded-3xl p-6 border border-slate-700/50">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i>
+                    <h3 class="text-lg font-bold text-white">Modos de Economia de Energia</h3>
+                </div>
+                <span class="text-xs text-slate-400">Selecione o perfil ideal</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Modo Normal -->
+                <button onclick="setBatteryMode('normal')" id="mode-normal" class="p-4 rounded-2xl border border-slate-700 bg-slate-900/50 text-left hover:border-cyan-500/50 transition-all cursor-pointer relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-bold text-white group-hover:text-cyan-400 transition-colors">Modo Balanceado</span>
+                        <i class="fa-solid fa-gauge-high text-slate-400"></i>
+                    </div>
+                    <p class="text-xs text-slate-400">Desempenho padrão para jogos e uso do dia a dia.</p>
+                </button>
+
+                <!-- Economia Moderada -->
+                <button onclick="setBatteryMode('saver')" id="mode-saver" class="p-4 rounded-2xl border border-emerald-500/40 bg-emerald-950/20 text-left hover:border-emerald-500 transition-all cursor-pointer relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-bold text-white group-hover:text-emerald-400 transition-colors">Economia Inteligente</span>
+                        <i class="fa-solid fa-[#22c55e] fa-leaf text-emerald-400"></i>
+                    </div>
+                    <p class="text-xs text-slate-400">Reduz atividades em 2º plano e aumenta a duração da bateria em até +30%.</p>
+                </button>
+
+                <!-- Economia Ultra -->
+                <button onclick="setBatteryMode('ultra')" id="mode-ultra" class="p-4 rounded-2xl border border-slate-700 bg-slate-900/50 text-left hover:border-amber-500/50 transition-all cursor-pointer relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-bold text-white group-hover:text-amber-400 transition-colors">Economia Ultra</span>
+                        <i class="fa-solid fa-shield-cat text-amber-400"></i>
+                    </div>
+                    <p class="text-xs text-slate-400">Mantém apenas funções essenciais. Duração máxima extrema.</p>
+                </button>
+            </div>
+        </section>
+
+        <!-- Processos em Segundo Plano Limpeza rápida -->
+        <section class="gradient-card rounded-3xl p-6 border border-slate-700/50">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-400"></i> Processos Consumidores em 2º Plano
+                    </h3>
+                    <p class="text-xs text-slate-400">Aplicativos abertos consumindo RAM e bateria sem você ver</p>
+                </div>
+                <button onclick="cleanAllApps()" class="px-4 py-2 bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-500/40 text-indigo-300 text-xs font-semibold rounded-xl transition-all">
+                    <i class="fa-solid fa-broom mr-1"></i> Limpar Todos
+                </button>
+            </div>
+
+            <div id="apps-list" class="space-y-3">
+                <!-- App item -->
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center text-sm">
+                            <i class="fa-brands fa-instagram"></i>
+                        </div>
+                        <div>
+                            <span class="text-sm font-semibold text-white">Redes Sociais em segundo plano</span>
+                            <p class="text-[11px] text-slate-400">Uso: 340 MB RAM • Atualização ativa</p>
+                        </div>
+                    </div>
+                    <button onclick="closeApp(this)" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium">Finalizar</button>
+                </div>
+
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-location-arrow"></i>
+                        </div>
+                        <div>
+                            <span class="text-sm font-semibold text-white">Serviços de Localização GPS</span>
+                            <p class="text-[11px] text-slate-400">Uso: Alto consumo de Bateria em standby</p>
+                        </div>
+                    </div>
+                    <button onclick="closeApp(this)" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium">Finalizar</button>
+                </div>
+
+                <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-gamepad"></i>
+                        </div>
+                        <div>
+                            <span class="text-sm font-semibold text-white">Cache de Jogos & Mídia</span>
+                            <p class="text-[11px] text-slate-400">Uso: 520 MB de memória acumulada</p>
+                        </div>
+                    </div>
+                    <button onclick="closeApp(this)" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium">Finalizar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Guia Definitivo: Dicas Reais para o Celular -->
+        <section class="gradient-card rounded-3xl p-6 border border-slate-700/50">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                    <i class="fa-solid fa-lightbulb text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Guia Definitivo contra Lags e Drenagem de Bateria</h3>
+                    <p class="text-xs text-slate-400">Configurações reais no seu celular Android/iOS que eliminam travamentos permanentemente</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                
+                <!-- Dica 1 -->
+                <div class="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-2">
+                    <div class="flex items-center space-x-2 text-cyan-400 font-bold">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>1. Opções do Desenvolvedor (Android)</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        Vá em <strong>Configurações > Sobre o Telefone</strong> e toque 7 vezes em <strong>"Número da Versão"</strong>.<br>
+                        Depois acesse <em>Opções do Desenvolvedor</em> e altere:
+                    </p>
+                    <ul class="list-disc list-inside text-slate-400 space-y-1">
+                        <li><strong>Escala de Animação:</strong> Mude de 1x para 0.5x ou Desativado.</li>
+                        <li><strong>Limite de processos em 2º plano:</strong> Ajuste para "No máximo 2 ou 3 processos".</li>
+                    </ul>
+                </div>
+
+                <!-- Dica 2 -->
+                <div class="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-2">
+                    <div class="flex items-center space-x-2 text-emerald-400 font-bold">
+                        <i class="fa-solid fa-sync"></i>
+                        <span>2. Restringir Atualizações e Uso em 2º Plano</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        Aplicativos como redes sociais continuam rodando sozinhos e aquecendo o processador.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-400 space-y-1">
+                        <li>Vá em <strong>Configurações > Aplicativos</strong>.</li>
+                        <li>Selecione apps pesados e marque a opção <strong>"Restringir uso de bateria em 2º plano"</strong>.</li>
+                        <li>Desative a <em>Atualização em 2º Plano</em> na Play Store/App Store.</li>
+                    </ul>
+                </div>
+
+                <!-- Dica 3 -->
+                <div class="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-2">
+                    <div class="flex items-center space-x-2 text-amber-400 font-bold">
+                        <i class="fa-solid fa-sun"></i>
+                        <span>3. Tela, Brilho e Taxa de Atualização</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        A tela é o componente que mais consome energia e gera calor no smartphone.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-400 space-y-1">
+                        <li>Use o <strong>Modo Escuro (Dark Mode)</strong> nativo (em telas OLED/AMOLED economiza até 30% de carga).</li>
+                        <li>Desative o brilho automático se ele costuma ficar exageradamente alto.</li>
+                        <li>Reduza a taxa de atualização para 60Hz quando não estiver jogando.</li>
+                    </ul>
+                </div>
+
+                <!-- Dica 4 -->
+                <div class="p-4 rounded-2xl bg-slate-900/50 border border-slate-800 space-y-2">
+                    <div class="flex items-center space-x-2 text-purple-400 font-bold">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>4. Limpeza de Memória Cache Semanal</span>
+                    </div>
+                    <p class="text-slate-300 leading-relaxed">
+                        Arquivos temporários corrompidos travam o sistema operacional.
+                    </p>
+                    <ul class="list-disc list-inside text-slate-400 space-y-1">
+                        <li>Limpe o cache dos navegadores e aplicativos de vídeo frequentemente.</li>
+                        <li>Mantenha pelo menos <strong>15% do armazenamento interno livre</strong> para que a memória virtual do sistema funcione sem engasgos.</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-8 text-center text-xs text-slate-500 py-4 border-t border-slate-800/80">
+        <p>PhoneBooster & Battery Master • Simulador de Otimização e Guia de Desempenho</p>
+    </footer>
+
+    <!-- Lógica em JavaScript -->
+    <script>
+        // Dados do Estado da Simulação
+        let systemState = {
+            ram: 68,
+            cpu: 42,
+            battery: 75,
+            temp: 34,
+            mode: 'normal'
+        };
+
+        // Atualizar simulação em tempo real com variações leves
+        setInterval(() => {
+            if (document.getElementById('optimization-modal').classList.contains('hidden')) {
+                // Flutuações aleatórias realistas
+                let ramVariation = (Math.random() * 4 - 2);
+                let cpuVariation = (Math.random() * 8 - 4);
+                
+                systemState.ram = Math.min(Math.max(Math.round(systemState.ram + ramVariation), 30), 95);
+                systemState.cpu = Math.min(Math.max(Math.round(systemState.cpu + cpuVariation), 15), 90);
+
+                updateUI();
+            }
+        }, 3000);
+
+        function updateUI() {
+            // RAM UI
+            document.getElementById('ram-value').innerText = systemState.ram + '%';
+            document.getElementById('ram-bar').style.width = systemState.ram + '%';
+            let ramUsedGB = ((systemState.ram / 100) * 4).toFixed(1);
+            document.getElementById('ram-subtext').innerText = `${ramUsedGB} GB / 4.0 GB em uso`;
+
+            // CPU UI
+            document.getElementById('cpu-value').innerText = systemState.cpu + '%';
+            document.getElementById('cpu-bar').style.width = systemState.cpu + '%';
+
+            // Battery UI
+            document.getElementById('battery-value').innerText = systemState.battery + '%';
+            document.getElementById('battery-bar').style.width = systemState.battery + '%';
+
+            // Temp UI
+            document.getElementById('temp-value').innerText = systemState.temp + '°C';
+            document.getElementById('temp-bar').style.width = (systemState.temp * 1.5) + '%';
+            
+            const tempStatus = document.getElementById('temp-status');
+            if (systemState.temp > 38) {
+                tempStatus.innerText = 'Aquecido / Alto Uso';
+                tempStatus.className = 'text-[11px] text-red-400 mt-2 font-medium';
+            } else {
+                tempStatus.innerText = 'Normal / Frio';
+                tempStatus.className = 'text-[11px] text-emerald-400 mt-2 font-medium';
+            }
+        }
+
+        // Executar Animação de Otimização Rápida
+        function startOptimization() {
+            const modal = document.getElementById('optimization-modal');
+            const progress = document.getElementById('opt-progress');
+            const percentText = document.getElementById('opt-percent');
+            const titleText = document.getElementById('opt-title');
+            const descText = document.getElementById('opt-desc');
+
+            modal.classList.remove('hidden');
+            progress.style.width = '0%';
+            percentText.innerText = '0%';
+
+            let currentProgress = 0;
+            const steps = [
+                { p: 30, title: 'Limpando Memória Cache...', desc: 'Removendo resíduos de apps fechados.' },
+                { p: 65, title: 'Refrigerando CPU...', desc: 'Interrompendo rotinas pesadas em segundo plano.' },
+                { p: 90, title: 'Otimizando Bateria...', desc: 'Ajustando consumo dos núcleos de processamento.' },
+                { p: 100, title: 'Concluído com Sucesso!', desc: 'Seu smartphone agora está rodando liso e economizando energia.' }
+            ];
+
+            let stepIndex = 0;
+
+            const interval = setInterval(() => {
+                currentProgress += 5;
+                progress.style.width = currentProgress + '%';
+                percentText.innerText = currentProgress + '%';
+
+                if (stepIndex < steps.length && currentProgress >= steps[stepIndex].p) {
+                    titleText.innerText = steps[stepIndex].title;
+                    descText.innerText = steps[stepIndex].desc;
+                    stepIndex++;
+                }
+
+                if (currentProgress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        
+                        // Aplicar melhorias visíveis nos números
+                        systemState.ram = Math.max(systemState.ram - 25, 32);
+                        systemState.cpu = Math.max(systemState.cpu - 20, 18);
+                        systemState.temp = Math.max(systemState.temp - 3, 31);
+                        
+                        document.getElementById('overall-status-text').innerText = 'Desempenho Máximo';
+                        document.getElementById('last-opt-time').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        
+                        updateUI();
+                    }, 1000);
+                }
+            }, 100);
+        }
+
+        // Alterar Modos de Economia de Bateria
+        function setBatteryMode(mode) {
+            systemState.mode = mode;
+            
+            const btnNormal = document.getElementById('mode-normal');
+            const btnSaver = document.getElementById('mode-saver');
+            const btnUltra = document.getElementById('mode-ultra');
+
+            // Reset borders
+            btnNormal.className = "p-4 rounded-2xl border border-slate-700 bg-slate-900/50 text-left hover:border-cyan-500/50 transition-all cursor-pointer relative overflow-hidden group";
+            btnSaver.className = "p-4 rounded-2xl border border-slate-700 bg-slate-900/50 text-left hover:border-emerald-500/50 transition-all cursor-pointer relative overflow-hidden group";
+            btnUltra.className = "p-4 rounded-2xl border border-slate-700 bg-slate-900/50 text-left hover:border-amber-500/50 transition-all cursor-pointer relative overflow-hidden group";
+
+            const timeSubtext = document.getElementById('battery-time');
+
+            if (mode === 'normal') {
+                btnNormal.className = "p-4 rounded-2xl border border-cyan-500 bg-cyan-950/20 text-left transition-all cursor-pointer relative overflow-hidden group ring-1 ring-cyan-500";
+                timeSubtext.innerText = "~14h 20m restantes";
+            } else if (mode === 'saver') {
+                btnSaver.className = "p-4 rounded-2xl border border-emerald-500 bg-emerald-950/30 text-left transition-all cursor-pointer relative overflow-hidden group ring-1 ring-emerald-500";
+                timeSubtext.innerText = "~21h 45m restantes (+30%)";
+                systemState.cpu = Math.min(systemState.cpu, 30);
+                updateUI();
+            } else if (mode === 'ultra') {
+                btnUltra.className = "p-4 rounded-2xl border border-amber-500 bg-amber-950/30 text-left transition-all cursor-pointer relative overflow-hidden group ring-1 ring-amber-500";
+                timeSubtext.innerText = "~38h 10m restantes (Máximo)";
+                systemState.cpu = Math.min(systemState.cpu, 15);
+                systemState.ram = Math.min(systemState.ram, 40);
+                updateUI();
+            }
+        }
+
+        // Finalizar app individual
+        function closeApp(btn) {
+            const card = btn.closest('.flex');
+            card.style.opacity = '0.4';
+            btn.innerText = 'Encerrado';
+            btn.disabled = true;
+
+            systemState.ram = Math.max(systemState.ram - 8, 25);
+            systemState.cpu = Math.max(systemState.cpu - 5, 12);
+            updateUI();
+        }
+
+        // Finalizar todos os apps da lista
+        function cleanAllApps() {
+            const list = document.getElementById('apps-list');
+            const buttons = list.querySelectorAll('button');
+            buttons.forEach(btn => closeApp(btn));
+        }
+
+        // Inicializar UI
+        updateUI();
+    </script>
+</body>
+</html>
+```
